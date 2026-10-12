@@ -1,0 +1,89 @@
+# ============================================================================
+#  HybridSN 复现环境 — Python 依赖清单
+# ----------------------------------------------------------------------------
+#  实测环境 : Windows 11 + Python 3.10.0 + NVIDIA GeForce RTX 5060 (8 GB)
+#  CUDA     : 13.0 (PyTorch 自带运行时)   cuDNN : 91200
+#  实测日期 : 2026-09
+#  配套文件 : 环境说明.md（环境详情） / check_env.py（环境自检脚本）
+# ----------------------------------------------------------------------------
+#  安装（一条命令，需联网）:
+#      pip install -r requirements.txt
+#
+#  安装后自检:
+#      python check_env.py          # 应输出 RESULT: ALL CHECKS PASSED
+#
+#  仅需 CPU 版 PyTorch（无 NVIDIA 显卡时）:
+#      注释掉下面的 --extra-index-url 行，并执行:
+#      pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# ============================================================================
+
+# CUDA 版 PyTorch 不发布在普通 PyPI 上，必须追加官方索引，
+# 否则下面的 torch==...+cu130 会报 "No matching distribution found"。
+--extra-index-url https://download.pytorch.org/whl/cu130
+
+
+# ---------------------------- 深度学习框架 ----------------------------
+torch==2.10.0+cu130
+torchvision==0.25.0+cu130
+torchinfo==1.8.0                 # 打印模型逐层摘要（torchinfo.summary）
+
+
+# ------------------- 科学计算 / 数据读取 / 评价指标 -------------------
+numpy==2.2.6
+scipy==1.15.3                    # scipy.io.loadmat 读取 PaviaU.mat 等数据集
+scikit-learn==1.7.2              # PCA、train_test_split、OA/AA/Kappa 评价
+h5py==3.16.0
+
+
+# -------------------------- 高光谱影像可视化 --------------------------
+spectral==0.22.4                 # 仅供 spectral.imshow / save_rgb 画图使用
+
+
+# ---------------------------- 绘图 / 进度条 ----------------------------
+matplotlib==3.10.9
+tqdm==4.67.3
+pillow==12.1.1
+
+
+# ------------- 间接依赖（会被上面自动安装，此处锁定以保证可复现）-------------
+# 若只想要最小清单，可以删掉这一段；保留它能让环境更严格地一致。
+joblib==1.6.0
+threadpoolctl==3.7.0
+contourpy==1.3.2
+cycler==0.12.1
+fonttools==4.65.0
+kiwisolver==1.5.1
+pyparsing==3.3.2
+python-dateutil==2.9.0.post0
+six==1.17.0
+
+
+# ============================================================================
+#  版本选择说明（与原仓库 README 要求的差异及原因）
+# ----------------------------------------------------------------------------
+#  原仓库 README 要求: pytorch 1.9.0 / scikit-learn 1.0.2 / spectral 0.22.2
+#                      / torchinfo 1.6.1
+#
+#  [torch] 1.9.0 → 2.10.0   （两条原因，缺一不可）
+#    1) PyTorch 1.9.0 在 PyPI 上只发布到 cp39 的 wheel，本机 Python 为 3.10，
+#       没有对应安装包；
+#    2) 1.9.0 自带的 CUDA 为 10.2 / 11.1，不支持 RTX 5060 的 sm_120
+#       (Blackwell) 计算架构 —— 即使装上也无法调用 GPU。
+#       sm_120 需要 CUDA 12.8 及以上，故必须使用高版本。
+#    → 实测结果: torch.cuda.is_available() == True，
+#                设备 "NVIDIA GeForce RTX 5060"，算力 (12, 0)。
+#
+#  [spectral] 0.22.2 → 0.22.4
+#    0.22.2 在 PyPI 上仅发布源码包 (tar.gz)，Windows 下编译需要 MSVC 编译器
+#    （本机未安装任何 C 编译器）。0.22.3 / 0.22.4 提供纯 Python wheel
+#    (py3-none-any)，且 notebook 使用到的 API（imshow / save_rgb /
+#    spy_colors / view_cube）与 0.22.2 完全一致，代码无需任何修改。
+#
+#  [scikit-learn] 1.0.2 → 1.7.2  /  [torchinfo] 1.6.1 → 1.8.0
+#    满足"版本不低于原要求"，且对 PyTorch 2.x 的兼容性更好。
+#
+#  网络提示（本机实测）
+#    若 pip 报 ProxyError / SSLError，说明 pip 未正确使用系统代理，
+#    可显式指定（本机代理端口 7897）:
+#        pip install -r requirements.txt --proxy http://127.0.0.1:7897
+# ============================================================================
